@@ -2,15 +2,14 @@ diff --git a/src/core/linux/SDL_evdev.c b/src/core/linux/SDL_evdev.c
 index de1b758..1632bd7 100644
 --- a/src/core/linux/SDL_evdev.c
 +++ b/src/core/linux/SDL_evdev.c
-@@ -367,5 +367,11 @@ void SDL_EVDEV_Poll(void)
+@@ -367,5 +367,10 @@ void SDL_EVDEV_Poll(void)
                      /* Probably keyboard */
                      scan_code = SDL_EVDEV_translate_keycode(events[i].code);
 +                    SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
-+                                "MLTV_DIAG_SDL_EVDEV_KEY code=%d value=%d scancode=%d (%s)",
++                                "MLTV_DIAG_SDL_EVDEV_KEY code=%d value=%d scancode=%d",
 +                                events[i].code,
 +                                events[i].value,
-+                                scan_code,
-+                                SDL_GetScancodeName(scan_code));
++                                scan_code);
                      if (scan_code != SDL_SCANCODE_UNKNOWN) {
                          if (events[i].value == 0) {
                              SDL_SendKeyboardKey(SDL_RELEASED, scan_code);
@@ -18,7 +17,7 @@ diff --git a/src/video/wayland/SDL_waylandevents.c b/src/video/wayland/SDL_wayla
 index 2250f37..4c2f348 100644
 --- a/src/video/wayland/SDL_waylandevents.c
 +++ b/src/video/wayland/SDL_waylandevents.c
-@@ -1362,4 +1362,21 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
+@@ -1362,4 +1362,20 @@ static void keyboard_handle_key(void *data, struct wl_keyboard *keyboard,
      if (!handled_by_ime) {
          scancode = Wayland_get_scancode_from_key(input, key + 8);
 +        {
@@ -28,13 +27,12 @@ index 2250f37..4c2f348 100644
 +                diag_sym = diag_syms[0];
 +            }
 +            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
-+                        "MLTV_DIAG_SDL_WAYLAND_KEY state=%s wl_key=%u xkb_key=%u xkb_sym=0x%x scancode=%d (%s) handled_by_ime=%d has_text=%d",
++                        "MLTV_DIAG_SDL_WAYLAND_KEY state=%s wl_key=%u xkb_key=%u xkb_sym=0x%x scancode=%d handled_by_ime=%d has_text=%d",
 +                        state == WL_KEYBOARD_KEY_STATE_PRESSED ? "DOWN" : "UP",
 +                        key,
 +                        key + 8,
 +                        (unsigned int)diag_sym,
 +                        scancode,
-+                        SDL_GetScancodeName(scancode),
 +                        handled_by_ime,
 +                        has_text);
 +        }
