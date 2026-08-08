@@ -32,6 +32,16 @@ static void quit_confirm_cb(lv_event_t *e);
 
 static void libs_init(app_t *app, int argc, char *argv[]);
 
+#if TARGET_WEBOS
+
+static int app_diag_event_watch(void *userdata, SDL_Event *event);
+
+static void app_diag_log_sdl_event(const SDL_Event *event);
+
+static const char *app_diag_sdl_event_name(Uint32 type);
+
+#endif
+
 app_t *global = NULL;
 
 
@@ -90,6 +100,10 @@ int app_init(app_t *app, app_settings_loader *settings_loader, int argc, char *a
 
     app_ui_init(&app->ui, app);
 
+#if TARGET_WEBOS
+    SDL_AddEventWatch(app_diag_event_watch, app);
+#endif
+
     global = app;
 
     SS4S_PostInit(argc, argv);
@@ -97,6 +111,9 @@ int app_init(app_t *app, app_settings_loader *settings_loader, int argc, char *a
 }
 
 void app_deinit(app_t *app) {
+#if TARGET_WEBOS
+    SDL_DelEventWatch(app_diag_event_watch, app);
+#endif
     app_bus_drain();
     app_session_destroy(app);
     app_ui_close(&app->ui);
@@ -274,6 +291,214 @@ void app_process_events(app_t *app) {
     SDL_PumpEvents();
     SDL_FilterEvents(app_event_filter, app);
 }
+
+#if TARGET_WEBOS
+
+static int app_diag_event_watch(void *userdata, SDL_Event *event) {
+    app_t *app = userdata;
+    if (app != NULL && app->session != NULL) {
+        app_diag_log_sdl_event(event);
+    }
+    return 0;
+}
+
+static void app_diag_log_sdl_event(const SDL_Event *event) {
+    switch (event->type) {
+        case SDL_KEYDOWN:
+        case SDL_KEYUP:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) scancode=%d (%s) keycode=%d (%s) state=%s mod=0x%x repeat=%d",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->key.keysym.scancode,
+                        SDL_GetScancodeName(event->key.keysym.scancode),
+                        event->key.keysym.sym,
+                        SDL_GetKeyName(event->key.keysym.sym),
+                        event->key.state == SDL_PRESSED ? "DOWN" : "UP",
+                        event->key.keysym.mod,
+                        event->key.repeat);
+            break;
+        case SDL_TEXTINPUT:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) text=\"%s\"",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->text.text);
+            break;
+        case SDL_MOUSEMOTION:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%u x=%d y=%d xrel=%d yrel=%d",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->motion.which,
+                        event->motion.x,
+                        event->motion.y,
+                        event->motion.xrel,
+                        event->motion.yrel);
+            break;
+        case SDL_MOUSEBUTTONDOWN:
+        case SDL_MOUSEBUTTONUP:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%u button=%u state=%s clicks=%u x=%d y=%d",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->button.which,
+                        event->button.button,
+                        event->button.state == SDL_PRESSED ? "DOWN" : "UP",
+                        event->button.clicks,
+                        event->button.x,
+                        event->button.y);
+            break;
+        case SDL_MOUSEWHEEL:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%u x=%d y=%d direction=%u",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->wheel.which,
+                        event->wheel.x,
+                        event->wheel.y,
+                        event->wheel.direction);
+            break;
+        case SDL_CONTROLLERAXISMOTION:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%d axis=%u value=%d",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->caxis.which,
+                        event->caxis.axis,
+                        event->caxis.value);
+            break;
+        case SDL_CONTROLLERBUTTONDOWN:
+        case SDL_CONTROLLERBUTTONUP:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%d button=%u state=%s",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->cbutton.which,
+                        event->cbutton.button,
+                        event->cbutton.state == SDL_PRESSED ? "DOWN" : "UP");
+            break;
+        case SDL_CONTROLLERTOUCHPADDOWN:
+        case SDL_CONTROLLERTOUCHPADMOTION:
+        case SDL_CONTROLLERTOUCHPADUP:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%d touchpad=%d finger=%d x=%f y=%f pressure=%f",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->ctouchpad.which,
+                        event->ctouchpad.touchpad,
+                        event->ctouchpad.finger,
+                        event->ctouchpad.x,
+                        event->ctouchpad.y,
+                        event->ctouchpad.pressure);
+            break;
+        case SDL_CONTROLLERSENSORUPDATE:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%d sensor=%d",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->csensor.which,
+                        event->csensor.sensor);
+            break;
+        case SDL_JOYDEVICEADDED:
+        case SDL_JOYDEVICEREMOVED:
+        case SDL_CONTROLLERDEVICEADDED:
+        case SDL_CONTROLLERDEVICEREMOVED:
+        case SDL_CONTROLLERDEVICEREMAPPED:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) which=%d",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->cdevice.which);
+            break;
+        case SDL_FINGERDOWN:
+        case SDL_FINGERUP:
+        case SDL_FINGERMOTION:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) touchId=%lld fingerId=%lld x=%f y=%f pressure=%f",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        (long long)event->tfinger.touchId,
+                        (long long)event->tfinger.fingerId,
+                        event->tfinger.x,
+                        event->tfinger.y,
+                        event->tfinger.pressure);
+            break;
+        case SDL_USEREVENT:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s) code=%d data1=%p data2=%p",
+                        event->type,
+                        app_diag_sdl_event_name(event->type),
+                        event->user.code,
+                        event->user.data1,
+                        event->user.data2);
+            break;
+        default:
+            SDL_LogInfo(SDL_LOG_CATEGORY_INPUT,
+                        "MLTV_DIAG_SDL_EVENT type=%u (%s)",
+                        event->type,
+                        app_diag_sdl_event_name(event->type));
+            break;
+    }
+}
+
+static const char *app_diag_sdl_event_name(Uint32 type) {
+    switch (type) {
+        case SDL_KEYDOWN:
+            return "SDL_KEYDOWN";
+        case SDL_KEYUP:
+            return "SDL_KEYUP";
+        case SDL_TEXTINPUT:
+            return "SDL_TEXTINPUT";
+        case SDL_MOUSEMOTION:
+            return "SDL_MOUSEMOTION";
+        case SDL_MOUSEBUTTONDOWN:
+            return "SDL_MOUSEBUTTONDOWN";
+        case SDL_MOUSEBUTTONUP:
+            return "SDL_MOUSEBUTTONUP";
+        case SDL_MOUSEWHEEL:
+            return "SDL_MOUSEWHEEL";
+        case SDL_CONTROLLERAXISMOTION:
+            return "SDL_CONTROLLERAXISMOTION";
+        case SDL_CONTROLLERBUTTONDOWN:
+            return "SDL_CONTROLLERBUTTONDOWN";
+        case SDL_CONTROLLERBUTTONUP:
+            return "SDL_CONTROLLERBUTTONUP";
+        case SDL_CONTROLLERTOUCHPADDOWN:
+            return "SDL_CONTROLLERTOUCHPADDOWN";
+        case SDL_CONTROLLERTOUCHPADMOTION:
+            return "SDL_CONTROLLERTOUCHPADMOTION";
+        case SDL_CONTROLLERTOUCHPADUP:
+            return "SDL_CONTROLLERTOUCHPADUP";
+        case SDL_CONTROLLERSENSORUPDATE:
+            return "SDL_CONTROLLERSENSORUPDATE";
+        case SDL_JOYDEVICEADDED:
+            return "SDL_JOYDEVICEADDED";
+        case SDL_JOYDEVICEREMOVED:
+            return "SDL_JOYDEVICEREMOVED";
+        case SDL_CONTROLLERDEVICEADDED:
+            return "SDL_CONTROLLERDEVICEADDED";
+        case SDL_CONTROLLERDEVICEREMOVED:
+            return "SDL_CONTROLLERDEVICEREMOVED";
+        case SDL_CONTROLLERDEVICEREMAPPED:
+            return "SDL_CONTROLLERDEVICEREMAPPED";
+        case SDL_FINGERDOWN:
+            return "SDL_FINGERDOWN";
+        case SDL_FINGERUP:
+            return "SDL_FINGERUP";
+        case SDL_FINGERMOTION:
+            return "SDL_FINGERMOTION";
+        case SDL_USEREVENT:
+            return "SDL_USEREVENT";
+        default:
+            if (type == USER_REMOTEBUTTONEVENT) {
+                return "USER_REMOTEBUTTONEVENT";
+            }
+            return "OTHER";
+    }
+}
+
+#endif
 
 void app_quit_confirm() {
     static const char *btn_txts[] = {translatable("Cancel"), translatable("OK"), ""};
