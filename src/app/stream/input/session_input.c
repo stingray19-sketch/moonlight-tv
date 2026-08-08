@@ -26,6 +26,7 @@ void session_input_init(stream_input_t *input, session_t *session, app_input_t *
     input->session = session;
     input->input = app_input;
     input->view_only = config->view_only;
+    input->screen_keyboard_active = false;
     input->stick_deadzone = config->stick_deadzone;
     input->no_sdl_mouse = config->hardware_mouse;
 #if FEATURE_INPUT_EVMOUSE
@@ -69,6 +70,7 @@ void session_input_stopped(stream_input_t *input) {
 }
 
 void session_input_screen_keyboard_opened(stream_input_t *input) {
+    input->screen_keyboard_active = true;
 #if FEATURE_INPUT_EVMOUSE
     const session_config_t *config = &input->session->config;
     if (config->hardware_mouse) {
@@ -78,6 +80,7 @@ void session_input_screen_keyboard_opened(stream_input_t *input) {
 }
 
 void session_input_screen_keyboard_closed(stream_input_t *input) {
+    input->screen_keyboard_active = false;
 #if FEATURE_INPUT_EVMOUSE
     const session_config_t *config = &input->session->config;
     if (config->hardware_mouse) {

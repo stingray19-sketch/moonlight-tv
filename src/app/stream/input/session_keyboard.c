@@ -126,15 +126,6 @@ void performPendingSpecialKeyCombo(stream_input_t *input) {
 }
 
 void stream_input_handle_key(stream_input_t *input, const SDL_KeyboardEvent *event) {
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                "KEY %s scancode=%d (%s) keycode=%d (%s) mod=0x%x repeat=%d",
-                event->state == SDL_PRESSED ? "DOWN" : "UP",
-                event->keysym.scancode,
-                SDL_GetScancodeName(event->keysym.scancode),
-                event->keysym.sym,
-                SDL_GetKeyName(event->keysym.sym),
-                event->keysym.mod,
-                event->repeat);
     short keyCode = 0;
 #if TARGET_WEBOS
     if (stream_input_webos_intercept_remote_keys(input, event, &keyCode)) {
@@ -230,7 +221,9 @@ void stream_input_handle_key(stream_input_t *input, const SDL_KeyboardEvent *eve
                 keyCode = VK_TAB;
                 break;
             case SDL_SCANCODE_CLEAR:
-                keyCode = VK_CLEAR;
+                if (!keyCode) {
+                    keyCode = VK_CLEAR;
+                }
                 break;
             case SDL_SCANCODE_KP_ENTER: // FIXME: Is this correct?
             case SDL_SCANCODE_RETURN:
@@ -431,11 +424,6 @@ void stream_input_handle_key(stream_input_t *input, const SDL_KeyboardEvent *eve
             free(node);
         }
     }
-
-    SDL_LogInfo(SDL_LOG_CATEGORY_APPLICATION,
-                "Translated VK=%d action=%s",
-                keyCode,
-                event->state == SDL_PRESSED ? "DOWN" : "UP");
 
     if (!input->view_only) {
         if (event->state == SDL_PRESSED) {

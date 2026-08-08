@@ -33,6 +33,7 @@ typedef struct stream_input_t {
     app_input_t *input;
     bool started;
     bool view_only, no_sdl_mouse;
+    bool screen_keyboard_active;
     uint8_t stick_deadzone;
     session_input_vmouse_t vmouse;
 #if FEATURE_INPUT_EVMOUSE

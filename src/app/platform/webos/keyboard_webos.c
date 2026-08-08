@@ -42,6 +42,11 @@ bool stream_input_webos_intercept_remote_keys(stream_input_t *input, const SDL_K
         case SDL_SCANCODE_WEBOS_CH_DOWN:
             *keyCode = VK_NEXT /* SDL_SCANCODE_PAGEDOWN */;
             return false;
+        case SDL_SCANCODE_CLEAR:
+            if (!input->screen_keyboard_active && event->keysym.sym == SDLK_CLEAR) {
+                *keyCode = VK_NUMPAD5;
+            }
+            return false;
         case SDL_SCANCODE_WEBOS_YELLOW:
             if (input->view_only) {
                 return true;
