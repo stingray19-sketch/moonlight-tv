@@ -134,15 +134,8 @@ set(BUILD_SHARED_CORE_LIBS OFF)
 
 if (TARGET_WEBOS)
     set(CMAKE_INSTALL_LIBDIR lib/backports)
-    set(SDL2_BACKPORT_REVISION "9f30a1f01e4d36aa5d3e4e04df5921b7a9d093ee")
+    set(SDL2_BACKPORT_RELEASE "release-2.30.12-webos.5")
     include(ExternalSDL2BackportForWebOS)
-    find_package(Git REQUIRED)
-    ExternalProject_Add_Step(ext_sdl2_backport moonlight_keyboard_diagnostics_patch
-            COMMAND ${GIT_EXECUTABLE} -C <SOURCE_DIR> apply --whitespace=nowarn
-            ${CMAKE_SOURCE_DIR}/patches/sdl-webos-keyboard-diagnostics.patch
-            DEPENDEES update
-            DEPENDERS configure
-    )
     unset(CMAKE_INSTALL_LIBDIR)
 else ()
     pkg_check_modules(SDL2 REQUIRED sdl2>=2.0.4)
